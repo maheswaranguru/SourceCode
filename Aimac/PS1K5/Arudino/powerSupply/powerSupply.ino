@@ -102,18 +102,6 @@ void loop()
 		  outputCurrent.lowMin = adc.currentOutput;
 		}
 
-//!< INPUTCURRENT READING  --- currently no need of input current....
-/*		adc.currentInput = analogRead(ADC_INPUT_CURRENT); 
-		if( adc.currentInput > inputCurrent.peakMax )
-		{
-			inputCurrent.peakMax = adc.currentInput;
-		}
-		if( adc.currentInput < inputCurrent.lowMin )
-		{
-			inputCurrent.lowMin = adc.currentInput;
-		}*/
-    
-   
   }
          
 	//oneSec_f = false;
@@ -198,11 +186,4 @@ void updateLcd( void )
     lcd.print( "%" );
    
 }
-void timerISR( void )
-{
-  oneSec_f = true;
-}
-void takeReading()
-{
-  oneSec_f = true;
-}
+
