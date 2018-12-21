@@ -109,10 +109,16 @@ void loop()
 	outputVolt.realWorldValue = outputVolt.meanValue * 0.449657;			   	//  n=(311/1023)*m;0.30400782
 	outputVolt.realWorldValue = (outputVolt.realWorldValue/1.390);   
 	
-	outputCurrent.meanValue = outputCurrent.peakMax - outputCurrent.lowMin;
-   for ( char i = 0; i<19; i++)
+
+	inputVolt.meanValue = inputVolt.peakMax - inputVolt.lowMin;
+	inputVolt.realWorldValue = inputVolt.meanValue * 0.449657;					//  n=(311/1023)*m;0.30400782
+	inputVolt.realWorldValue = (inputVolt.realWorldValue/1.390);  
+
+    outputCurrent.meanValue = outputCurrent.peakMax - outputCurrent.lowMin;
+    
+    for ( char i = 0; i<19; i++)
     {
-      if( opCurrentAdcValue[i] > inputVolt.meanValue )          /// WHY IT IS COMPARE WITH INPUTVOLT.MEANVALUE ? IT SHOULD BE WITH CURRENT!
+      if( opCurrentAdcValue[i] > outputCurrent.meanValue )          /// WHY IT IS COMPARE WITH INPUTVOLT.MEANVALUE ? IT SHOULD BE WITH CURRENT!
       {
         opLowValue = i-1;
         break;
@@ -120,20 +126,15 @@ void loop()
     }
     for ( char i = 0; i<19; i++)
     {
-      if( opCurrentAdcValue[i] > inputVolt.meanValue )
+      if( opCurrentAdcValue[i] > outputCurrent.meanValue )
       {
         opHighValue = i;
         break;
       }
     }
-
+    
     outputCurrent.realWorldValue = lUpCurrent[opLowValue];
-	//outputCurrent.realWorldValue = outputCurrent.meanValue * 0.449657;			//  n=(311/1023)*m;0.30400782
-	//outputCurrent.realWorldValue = (outputCurrent.realWorldValue/1.390);  
-	
-	inputVolt.meanValue = inputVolt.peakMax - inputVolt.lowMin;
-	inputVolt.realWorldValue = inputVolt.meanValue * 0.449657;					//  n=(311/1023)*m;0.30400782
-	inputVolt.realWorldValue = (inputVolt.realWorldValue/1.390);  
+
 
   load = outputVolt.realWorldValue/outputCurrent.realWorldValue;
 /*	inputCurrent.meanValue = inputCurrent.peakMax - inputCurrent.lowMin;
