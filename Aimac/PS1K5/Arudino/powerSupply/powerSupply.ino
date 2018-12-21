@@ -43,7 +43,7 @@ unsigned char opLowValue = 0;
 unsigned char opHighValue = 0;
 
 bool oneSec_f = false;
-systemState_t oldsysStat = NOT_READY;
+systemState_t oldSysStat = NOT_READY;
 systemState_t sysStat = NOT_READY;
 systemError_t sysErrorStat = NO_ERROR;
 uint8_t startUpTimer = 0;
@@ -175,19 +175,44 @@ void Init_LCD( void )
 *****************************************************/
 void updateLcd( void )
 {
-    lcd.clear();
-    lcd.print( "IPV:" );
-    lcd.print( (int)inputVolt.realWorldValue, DEC );
-    lcd.print( " OPV:" );
-    lcd.print( (int)outputVolt.realWorldValue, DEC );
+	if( oldSysStat != sysStat )
+	{
+		lcd.clear();
+		oldSysStat = sysStat;
+		minVoltCnt = 0;
+		maxVoltCnt =0;
+		overLoadCnt = 0;
+	}
     
-    lcd.setCursor(0,1);
-    lcd.print( "OPC:" );
-    lcd.print( (int)outputCurrent.realWorldValue, DEC );
-    lcd.print( " LOD:" );
-    lcd.print( (int)load, DEC );
-    lcd.setCursor(15,1);
-    lcd.print( "%" );
+	switch( sysStat )
+	{
+	case NORMAL :
+	    lcd.print( "IPV:" );
+	    lcd.print( (int)inputVolt.realWorldValue, DEC );
+	    lcd.print( " OPV:" );
+	    lcd.print( (int)outputVolt.realWorldValue, DEC );
+
+	    lcd.setCursor(0,1);
+	    lcd.print( "OPC:" );
+	    lcd.print( (int)outputCurrent.realWorldValue, DEC );
+	    lcd.print( " LOD:" );
+	    lcd.print( (int)load, DEC );
+	    lcd.setCursor(15,1);
+	    lcd.print( "%" );
+
+	case HIGHVOLTAGE :
+
+	    lcd.print( "IPV:" );
+	    lcd.print( (int)inputVolt.realWorldValue, DEC );
+	    lcd.print( " OPV:" );
+	    lcd.print( (int)outputVolt.realWorldValue, DEC );
+
+	    lcd.setCursor(0,1);
+	    lcd.print( "HighVolt Detect" );
+	    break;
+
+	}
+
    
 }
 
