@@ -3,9 +3,9 @@
     	
     <storageModule moduleId="org.eclipse.cdt.core.settings">
         		
-        <cconfiguration id="org.eclipse.cdt.core.default.config.162851733">
+        <cconfiguration id="org.eclipse.cdt.core.default.config.1248881243">
             			
-            <storageModule buildSystemId="org.eclipse.cdt.core.defaultConfigDataProvider" id="org.eclipse.cdt.core.default.config.162851733" moduleId="org.eclipse.cdt.core.settings" name="Configuration">
+            <storageModule buildSystemId="org.eclipse.cdt.core.defaultConfigDataProvider" id="org.eclipse.cdt.core.default.config.1248881243" moduleId="org.eclipse.cdt.core.settings" name="Configuration">
                 				
                 <externalSettings/>
                 				
@@ -22,6 +22,8 @@
     <storageModule moduleId="org.eclipse.cdt.core.pathentry">
         		
         <pathentry kind="src" path=""/>
+        		
+        <pathentry excluding="**/CMakeFiles/**" kind="out" path="build"/>
         	
     </storageModule>
     	

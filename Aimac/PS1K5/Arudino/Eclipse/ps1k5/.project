@@ -15,7 +15,7 @@
 	<natures>
 		<nature>org.eclipse.cdt.core.cnature</nature>
 		<nature>org.eclipse.cdt.core.ccnature</nature>
-		<nature>org.eclipse.cdt.arduino.core.arduinoNature</nature>
+		<nature>org.eclipse.cdt.cmake.core.cmakeNature</nature>
 	</natures>
 	<linkedResources>
 		<link>

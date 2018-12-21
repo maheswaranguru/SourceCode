@@ -9,6 +9,10 @@
 #define OFF 0
 #endif
 
+#define DEFAULT_MIN_VOLT	200
+#define DEFAULT_MAX_VOLT 	250
+#define ADC_READ_SAMPLES	1000
+
 #define RELAY 6
 #define NANO_LED PB5
 
@@ -25,6 +29,10 @@
 #define MAX_LOAD  1500
 
 #define STABLE_CNT  5
+#define STARTUP_CNT  320
+
+#define TOTAL_POWER 1464
+#define MAX_POWER (TOTAL_POWER*0.9)
 
 
 typedef struct
@@ -55,11 +63,12 @@ typedef enum{
 
 
 typedef enum{
-  NO_ERROR = 0,
-  HIGHVOLTAGE,
-  LOWVOLTAGE,
-  NOLOAD,
-  OVERLOAD,
+	NO_ERROR = 0,
+	HIGHVOLTAGE,
+	LOWVOLTAGE,
+	NOLOAD,
+	OVERLOAD,
+	ERROR_MAX
 }systemError_t;
 
 #endif
