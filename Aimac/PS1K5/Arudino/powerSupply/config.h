@@ -1,6 +1,14 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+#ifndef ON
+#define ON 1
+#endif
+
+#ifndef OFF
+#define OFF 0
+#endif
+
 #define RELAY 6
 #define NANO_LED PB5
 
@@ -18,10 +26,12 @@
 
 #define STABLE_CNT  5
 
+
 typedef struct
 {
   unsigned int voltInput;
-  unsigned int current;
+  unsigned int voltOutput;
+  unsigned int currentOutput;
 }adc_t;
 
 typedef struct
@@ -36,8 +46,7 @@ typedef struct
 typedef enum{
   NOT_READY = 0,
   IDEL,
-  OFF,
-  ON,
+  NORMAL,
   MINIMUM_VOLT,
   MAXIMUM_VOLT,
   OVER_LOAD,
