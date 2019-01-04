@@ -7,7 +7,7 @@
 
 //#include <Arduino.h>
 
-#include <LiquidCrystal.h>
+#include "LiquidCrystal_I2C.h"
 
 #include "config.h"
 #include "timer.h"
@@ -59,19 +59,21 @@ const unsigned int ADC_INPUT_VOLT  = A0;
 const unsigned int ADC_OUTPUT_CURRENT  = A3;
 const unsigned int ADC_INPUT_CURRENT = A4;
 
-const int rs = 2, en = 3, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 unsigned int looptime = 0;
 
+// initialize the LCD library with the numbers of the interface pins
+LiquidCrystal_I2C lcd(0x27,16,2); // set the LCD address to 0x27 for a 16 chars and 2 line display
+
 /****************************************************
-*Name : 
-*Para1:
-*Return:
+*Name : setup
+*Para1:  NA
+*Return: NA
 *Details:
 *****************************************************/
 void setup() 
 {
-  Init_LCD();
+  lcd.init(); //initialize the lcd
+  lcd.backlight(); //open the backlight
   Serial.begin(9600);
   
   pinMode(RELAY, OUTPUT);
@@ -94,56 +96,56 @@ void setup()
 void loop() 
 {
          
-	  readVIvalues();
-	  calculateVIvalues();
+      readVIvalues();
+      calculateVIvalues();
 
-	  sysErrorStat = checkForThreshold();
+      sysErrorStat = checkForThreshold();
 
-	  switch( sysStat )
-	  {
-	  case NOT_READY :
-					  digitalWrite(RELAY, OFF);
-					  sysStat = IDEL;
-					  break;
+      switch( sysStat )
+      {
+      case NOT_READY :
+                      digitalWrite(RELAY, OFF);
+                      sysStat = IDEL;
+                      break;
 
-	  case IDEL	:
-				  if(STARTUP_CNT <= ++startUpTimer)
-				  {
-					sysStat = NORMAL;
-				  }
-				  break;
+      case IDEL    :
+                  if(STARTUP_CNT <= ++startUpTimer)
+                  {
+                    sysStat = NORMAL;
+                  }
+                  break;
 
-	  case NORMAL :
-				  if( NO_ERROR == sysErrorStat )
-				  {
-					  digitalWrite(RELAY, ON);
-				  }else if(  ( HIGHVOLTAGE == sysErrorStat ) || ( LOWVOLTAGE == sysErrorStat ) || ( OVERLOAD == sysErrorStat ) )
-				  {
-					  digitalWrite(RELAY, OFF);
-				  }
-				  break;
+      case NORMAL :
+                  if( NO_ERROR == sysErrorStat )
+                  {
+                      digitalWrite(RELAY, ON);
+                  }else if(  ( HIGHVOLTAGE == sysErrorStat ) || ( LOWVOLTAGE == sysErrorStat ) || ( OVERLOAD == sysErrorStat ) )
+                  {
+                      digitalWrite(RELAY, OFF);
+                  }
+                  break;
 
-	  case MINIMUM_VOLT :
-				  minVoltCnt++;
-				  break;
+      case MINIMUM_VOLT :
+                  minVoltCnt++;
+                  break;
 
-	  case MAXIMUM_VOLT :
-		  	  	  maxVoltCnt++;
-				  break;
+      case MAXIMUM_VOLT :
+                      maxVoltCnt++;
+                  break;
 
-	  case OVER_LOAD :
-		  	  	  overLoadCnt++;
-		  	  	  break;
+      case OVER_LOAD :
+                      overLoadCnt++;
+                      break;
 
-	  case NO_LOAD:
-	  default :
-		  digitalWrite(RELAY, OFF);
-		  break;
-	  }
+      case NO_LOAD:
+      default :
+          digitalWrite(RELAY, OFF);
+          break;
+      }
 
 
-	updateLcd();
-	resetValues();
+    updateLcd();
+    resetValues();
 }
 
 /****************************************************
@@ -154,17 +156,17 @@ void loop()
 *****************************************************/
 void Init_LCD( void )
 {
-  lcd.begin(16, 2);
-  lcd.clear();
-  lcd.print("--- WELCOME ---");
-  lcd.setCursor(0,1);
-  lcd.print("**** AiMac **** ");
-  delay(2000);
-  
-  lcd.clear();
-  lcd.print("Initializing...");
-  lcd.setCursor(0,1);
-  lcd.print("Safe 1K5 ");
+    lcd.init(); //initialize the lcd
+    lcd.clear();
+    lcd.print("--- WELCOME ---");
+    lcd.setCursor(0,1);
+    lcd.print("**** AiMac **** ");
+    delay(2000);
+
+    lcd.clear();
+    lcd.print("Initializing...");
+    lcd.setCursor(0,1);
+    lcd.print("Safe 1K5 ");
 
 }
 /****************************************************
@@ -175,43 +177,43 @@ void Init_LCD( void )
 *****************************************************/
 void updateLcd( void )
 {
-	if( oldSysStat != sysStat )
-	{
-		lcd.clear();
-		oldSysStat = sysStat;
-		minVoltCnt = 0;
-		maxVoltCnt =0;
-		overLoadCnt = 0;
-	}
+    if( oldSysStat != sysStat )
+    {
+        lcd.clear();
+        oldSysStat = sysStat;
+        minVoltCnt = 0;
+        maxVoltCnt =0;
+        overLoadCnt = 0;
+    }
     
-	switch( sysStat )
-	{
-	case NORMAL :
-	    lcd.print( "IPV:" );
-	    lcd.print( (int)inputVolt.realWorldValue, DEC );
-	    lcd.print( " OPV:" );
-	    lcd.print( (int)outputVolt.realWorldValue, DEC );
+    switch( sysStat )
+    {
+    case NORMAL :
+        lcd.print( "IPV:" );
+        lcd.print( (int)inputVolt.realWorldValue, DEC );
+        lcd.print( " OPV:" );
+        lcd.print( (int)outputVolt.realWorldValue, DEC );
 
-	    lcd.setCursor(0,1);
-	    lcd.print( "OPC:" );
-	    lcd.print( (int)outputCurrent.realWorldValue, DEC );
-	    lcd.print( " LOD:" );
-	    lcd.print( (int)load, DEC );
-	    lcd.setCursor(15,1);
-	    lcd.print( "%" );
+        lcd.setCursor(0,1);
+        lcd.print( "OPC:" );
+        lcd.print( (int)outputCurrent.realWorldValue, DEC );
+        lcd.print( " LOD:" );
+        lcd.print( (int)load, DEC );
+        lcd.setCursor(15,1);
+        lcd.print( "%" );
 
-	case HIGHVOLTAGE :
+    case HIGHVOLTAGE :
 
-	    lcd.print( "IPV:" );
-	    lcd.print( (int)inputVolt.realWorldValue, DEC );
-	    lcd.print( " OPV:" );
-	    lcd.print( (int)outputVolt.realWorldValue, DEC );
+        lcd.print( "IPV:" );
+        lcd.print( (int)inputVolt.realWorldValue, DEC );
+        lcd.print( " OPV:" );
+        lcd.print( (int)outputVolt.realWorldValue, DEC );
 
-	    lcd.setCursor(0,1);
-	    lcd.print( "HighVolt Detect" );
-	    break;
+        lcd.setCursor(0,1);
+        lcd.print( "HighVolt Detect" );
+        break;
 
-	}
+    }
 
    
 }
@@ -229,37 +231,37 @@ void readVIvalues( void )
       {
     
         //!< OUTPUTVOLTAGE READING
-		adc.voltOutput = analogRead(ADC_OUTPUT_VOLT); 
-		if( adc.voltOutput > outputVolt.peakMax )
-		{
+        adc.voltOutput = analogRead(ADC_OUTPUT_VOLT); 
+        if( adc.voltOutput > outputVolt.peakMax )
+        {
             outputVolt.peakMax = adc.voltOutput;
-		}
-		if( adc.voltOutput < outputVolt.lowMin )
-		{
+        }
+        if( adc.voltOutput < outputVolt.lowMin )
+        {
             outputVolt.lowMin = adc.voltOutput;
-		}
+        }
 
         //!< INPUTVOLTAGE READING
-		adc.voltInput = analogRead(ADC_INPUT_VOLT); 
-		if( adc.voltInput > inputVolt.peakMax )
-		{
-			inputVolt.peakMax = adc.voltInput;
-		}
-		if( adc.voltInput < inputVolt.lowMin )
-		{
-			inputVolt.lowMin = adc.voltInput;
-		}
+        adc.voltInput = analogRead(ADC_INPUT_VOLT); 
+        if( adc.voltInput > inputVolt.peakMax )
+        {
+            inputVolt.peakMax = adc.voltInput;
+        }
+        if( adc.voltInput < inputVolt.lowMin )
+        {
+            inputVolt.lowMin = adc.voltInput;
+        }
     
         //!< OUTPUTCURRENT READING
-		adc.currentOutput = analogRead(ADC_OUTPUT_CURRENT); 
-		if( adc.currentOutput > outputCurrent.peakMax )
-		{
+        adc.currentOutput = analogRead(ADC_OUTPUT_CURRENT); 
+        if( adc.currentOutput > outputCurrent.peakMax )
+        {
             outputCurrent.peakMax = adc.currentOutput;
-		}
-		if( adc.currentOutput < outputCurrent.lowMin )
-		{
+        }
+        if( adc.currentOutput < outputCurrent.lowMin )
+        {
             outputCurrent.lowMin = adc.currentOutput;
-		}
+        }
 
     }
 }
@@ -273,20 +275,20 @@ void readVIvalues( void )
 void calculateVIvalues( void )
 {    
 
-	outputVolt.meanValue = outputVolt.peakMax - outputVolt.lowMin;
-	outputVolt.realWorldValue = outputVolt.meanValue * 0.449657;			   	//  n=(311/1023)*m;0.30400782
-	outputVolt.realWorldValue = (outputVolt.realWorldValue/1.390);   
-	
+    outputVolt.meanValue = outputVolt.peakMax - outputVolt.lowMin;
+    outputVolt.realWorldValue = outputVolt.meanValue * 0.449657;                   //  n=(311/1023)*m;0.30400782
+    outputVolt.realWorldValue = (outputVolt.realWorldValue/1.390);   
+    
 
-	inputVolt.meanValue = inputVolt.peakMax - inputVolt.lowMin;
-	inputVolt.realWorldValue = inputVolt.meanValue * 0.449657;					//  n=(311/1023)*m;0.30400782
-	inputVolt.realWorldValue = (inputVolt.realWorldValue/1.390);  
+    inputVolt.meanValue = inputVolt.peakMax - inputVolt.lowMin;
+    inputVolt.realWorldValue = inputVolt.meanValue * 0.449657;                    //  n=(311/1023)*m;0.30400782
+    inputVolt.realWorldValue = (inputVolt.realWorldValue/1.390);  
 
-	outputCurrent.meanValue = outputCurrent.peakMax - outputCurrent.lowMin;
-	outputCurrent.realWorldValue = findyValue(outputCurrent.meanValue);
-	power = outputVolt.realWorldValue*outputCurrent.realWorldValue;
+    outputCurrent.meanValue = outputCurrent.peakMax - outputCurrent.lowMin;
+    outputCurrent.realWorldValue = findyValue(outputCurrent.meanValue);
+    power = outputVolt.realWorldValue*outputCurrent.realWorldValue;
 
-	load = (power/TOTAL_POWER)*100;
+    load = (power/TOTAL_POWER)*100;
 
   }
 
@@ -314,12 +316,12 @@ float findyValue( int x3 )
     }
     if(x1p != 0)
     {
-    	x1p--;
+        x1p--;
     }
     x2p++;
 
-	//outputCurrent.realWorldValue = x1p;
-	// load = x2p;
+    //outputCurrent.realWorldValue = x1p;
+    // load = x2p;
 
     m = ( outCurrentCalLUT[x2p] - outCurrentCalLUT[x1p] )/ ( outCurrentAdcLUT[x2p] - outCurrentAdcLUT[x1p] );
     y3 = ((m*(x3-outCurrentAdcLUT[x1p]))+ outCurrentCalLUT[x1p]);
@@ -335,15 +337,15 @@ float findyValue( int x3 )
 *****************************************************/
 void resetValues( void )
 {
-	outputVolt.peakMax = 0;
-	outputVolt.lowMin = 0x3FF;
-	inputVolt.peakMax = 0;
-	inputVolt.lowMin = 0x3FF;
-	outputCurrent.peakMax = 0;
-	outputCurrent.lowMin = 0x3FF;
-	inputCurrent.peakMax = 0;
-	inputCurrent.lowMin = 0x3FF;
-	load = 0;
+    outputVolt.peakMax = 0;
+    outputVolt.lowMin = 0x3FF;
+    inputVolt.peakMax = 0;
+    inputVolt.lowMin = 0x3FF;
+    outputCurrent.peakMax = 0;
+    outputCurrent.lowMin = 0x3FF;
+    inputCurrent.peakMax = 0;
+    inputCurrent.lowMin = 0x3FF;
+    load = 0;
 }
 
 /****************************************************
@@ -354,24 +356,24 @@ void resetValues( void )
 *****************************************************/
 systemError_t checkForThreshold( void )
 {
-	systemError_t lstatus = NO_ERROR;
-	int power  = 0;
+    systemError_t lstatus = NO_ERROR;
+    int power  = 0;
 
-	if( MIN_REQ_VOLT >= inputVolt.realWorldValue )
-	{
-		lstatus |= LOWVOLTAGE;
-	}
+    if( MIN_REQ_VOLT >= inputVolt.realWorldValue )
+    {
+        lstatus |= LOWVOLTAGE;
+    }
 
-	if( MAX_REQ_VOLT< inputVolt.realWorldValue )
-	{
-		lstatus |= HIGHVOLTAGE;
-	}
+    if( MAX_REQ_VOLT< inputVolt.realWorldValue )
+    {
+        lstatus |= HIGHVOLTAGE;
+    }
 
-	if ( load >= MAX_POWER )
-	{
-		lstatus |= OVERLOAD;
-	}
+    if ( load >= MAX_POWER )
+    {
+        lstatus |= OVERLOAD;
+    }
 
-	return( lstatus );
+    return( lstatus );
 
 }
