@@ -83,8 +83,6 @@ void setup()
   delay( START_UP_DELAY );
   TimerInit();
 
-
-  //digitalWrite(RELAY, HIGH);
 }
 
 /****************************************************
@@ -109,7 +107,7 @@ void loop()
                       break;
 
       case IDEL    :
-                  if(STARTUP_CNT <= ++startUpTimer)
+                  if(STARTUP_CNT <= ++startUpTimer)         //
                   {
                     sysStat = NORMAL;
                   }
@@ -167,6 +165,7 @@ void Init_LCD( void )
     lcd.print("Initializing...");
     lcd.setCursor(0,1);
     lcd.print("Safe 1K5 ");
+    delay(2000);
 
 }
 /****************************************************
@@ -189,15 +188,21 @@ void updateLcd( void )
     switch( sysStat )
     {
     case NORMAL :
-        lcd.print( "IPV:" );
+        lcd.print( "IPV:   " );
+        lcd.setCursor(4,0);
         lcd.print( (int)inputVolt.realWorldValue, DEC );
-        lcd.print( " OPV:" );
+        lcd.setCursor(7,0);
+        lcd.print( " OPV:   " );
+        lcd.setCursor(12,0);
         lcd.print( (int)outputVolt.realWorldValue, DEC );
 
         lcd.setCursor(0,1);
-        lcd.print( "OPC:" );
+        lcd.print( "OPC:   " );
+        lcd.setCursor(4,1);
         lcd.print( (int)outputCurrent.realWorldValue, DEC );
-        lcd.print( " LOD:" );
+        lcd.setCursor(8,1);
+        lcd.print( " LOD:   " );
+        lcd.setCursor(13,1);
         lcd.print( (int)load, DEC );
         lcd.setCursor(15,1);
         lcd.print( "%" );
