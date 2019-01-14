@@ -1,6 +1,9 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+#define PRODUCD_3KVA (0)
+//#define 1K5VA  (1)
+
 #ifndef ON
 #define ON 1
 #endif
@@ -31,8 +34,19 @@
 #define STABLE_CNT  5
 #define STARTUP_CNT  320
 
-#define TOTAL_POWER 1464
+#ifdef PRODUCD_1K5VA
+#define TOTAL_POWER 1426       // (  voltage * current == 230 * 6.2 )
 #define MAX_POWER (TOTAL_POWER*0.9)
+#endif
+
+#ifdef PRODUCD_3KVA
+#define TOTAL_POWER 2990       // (  voltage * current == 230 * 13 )
+#define MAX_POWER (TOTAL_POWER*0.9)
+#endif
+
+#define INPUTVOLT_THRESHOLD  5
+const uint8_t inVoltRange[] = { 220, 245, 220, 255, 200, 245, 190, 245, 180, 245 };
+
 
 
 typedef struct

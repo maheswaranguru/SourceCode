@@ -12,14 +12,19 @@
 #include "config.h"
 #include "timer.h"
 
-#define RELAY 12
+#define RELAY 9
+#define BUZZER 10
 #define START_UP_DELAY 3000
 
 float voltage[] = { 4,6,8,10,12,14,16 };
 float current[] = { 0.6, 2.6, 4.55, 6.57, 8.6, 10.6, 12.6 };
 
-uint16_t outCurrentAdcLUT[] = {0, 3, 7, 10, 14, 17, 20, 24, 27, 31, 34, 68, 102, 136, 170, 341, 512, 683, 853, 1024 };
-float outCurrentCalLUT[] = { 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30 };
+//uint16_t outCurrentAdcLUT[] = {0, 3, 7, 10, 14, 17, 20, 24, 27, 31, 34, 68, 102, 136, 170, 341, 512, 683, 853, 1024 };
+//float outCurrentCalLUT[] = { 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30 };
+
+uint16_t outCurrentAdcLUT[] = {9, 43, 85, 128, 171, 213, 256, 299, 341, 384, 427, 469, 512, 555, 597, 640, 683, 725, 768, 811, 853, 896, 939, 981, 1024 };
+float outCurrentCalLUT[] = { 0.2, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 };  
+
 uint8_t sizeAdcLUT = sizeof(outCurrentAdcLUT)/ sizeof(uint16_t);
 uint8_t sizeCalCurLUT = sizeof(outCurrentCalLUT)/ sizeof(float);
 
@@ -28,7 +33,9 @@ void readVIvalues( void );
 void calculateVIvalues( void );
 void resetValues( void );
 systemError_t checkForThreshold( void );
-float findyValue( int x3 );
+float findyValue( float x3 );
+
+uint8_t readDipSwd( void );
 
 void Init_LCD( void );
 void timerISR( void );
@@ -37,6 +44,8 @@ void timerISR( void );
 adc_t adc;
 data_t outputVolt, inputVolt, outputCurrent, inputCurrent;
 unsigned int load;
+
+unsigned int outi = 0;
 
 float power = 0;
 unsigned char opLowValue = 0;
@@ -62,7 +71,7 @@ const unsigned int ADC_INPUT_CURRENT = A4;
 unsigned int looptime = 0;
 
 // initialize the LCD library with the numbers of the interface pins
-LiquidCrystal_I2C lcd(0x27,16,2); // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x3F,16,2); // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 /****************************************************
 *Name : setup
@@ -72,16 +81,31 @@ LiquidCrystal_I2C lcd(0x27,16,2); // set the LCD address to 0x27 for a 16 chars 
 *****************************************************/
 void setup() 
 {
-  lcd.init(); //initialize the lcd
+  uint8_t  inputSWDStatus = 0;
+  
+ /* lcd.init(); //initialize the lcd
   lcd.backlight(); //open the backlight
-  Serial.begin(9600);
+  Serial.begin(9600);*/
+  pinMode(5, INPUT);
+  pinMode(6, INPUT);
+  pinMode(7, INPUT);
+  pinMode(8, INPUT);
   
   pinMode(RELAY, OUTPUT);
   digitalWrite(RELAY, OFF);
+  
+  pinMode(BUZZER, OUTPUT);
+  digitalWrite(BUZZER, ON);
+  
+  Init_LCD();
+  digitalWrite(BUZZER, Off);
+  inputSWDStatus = readDipSwd();
 
   sysStat = NOT_READY;
   delay( START_UP_DELAY );
-  TimerInit();
+  lcd.clear();
+  
+ // TimerInit();
 
 }
 
@@ -97,30 +121,46 @@ void loop()
       readVIvalues();
       calculateVIvalues();
 
-      sysErrorStat = checkForThreshold();
+      //sysErrorStat = checkForThreshold();
 
       switch( sysStat )
       {
       case NOT_READY :
                       digitalWrite(RELAY, OFF);
                       sysStat = IDEL;
+                                            
                       break;
 
       case IDEL    :
-                  if(STARTUP_CNT <= ++startUpTimer)         //
+                 /* if(STARTUP_CNT <= ++startUpTimer)         //
                   {
                     sysStat = NORMAL;
+                  }*/
+                  if( inputVolt.realWorldValue > (maxVoltageLtd + INPUTVOLT_THRESHOLD) )
+                  {
+                      sysStat = MAXIMUM_VOLT;
+                  }else if( inputVolt.realWorldValue < (minVoltageLtd - INPUTVOLT_THRESHOLD) )
+                  {
+                      sysStat = MINIMUM_VOLT;
+                  }else
+                  {
+                      sysStat = NORMAL;
                   }
+                  
+                  //sysStat = NORMAL;
+                  
                   break;
 
       case NORMAL :
-                  if( NO_ERROR == sysErrorStat )
+                 /* if( NO_ERROR == sysErrorStat )
                   {
                       digitalWrite(RELAY, ON);
                   }else if(  ( HIGHVOLTAGE == sysErrorStat ) || ( LOWVOLTAGE == sysErrorStat ) || ( OVERLOAD == sysErrorStat ) )
                   {
                       digitalWrite(RELAY, OFF);
-                  }
+                  }*/
+                  digitalWrite(RELAY, ON);
+                  
                   break;
 
       case MINIMUM_VOLT :
@@ -155,6 +195,7 @@ void loop()
 void Init_LCD( void )
 {
     lcd.init(); //initialize the lcd
+    lcd.backlight(); //open the backlight
     lcd.clear();
     lcd.print("--- WELCOME ---");
     lcd.setCursor(0,1);
@@ -164,7 +205,7 @@ void Init_LCD( void )
     lcd.clear();
     lcd.print("Initializing...");
     lcd.setCursor(0,1);
-    lcd.print("Safe 1K5 ");
+    lcd.print("*** SAFE 1K5 ***");
     delay(2000);
 
 }
@@ -188,10 +229,11 @@ void updateLcd( void )
     switch( sysStat )
     {
     case NORMAL :
-        lcd.print( "IPV:   " );
+        lcd.setCursor(0,0);
+        lcd.print( "IPV:    " );
         lcd.setCursor(4,0);
         lcd.print( (int)inputVolt.realWorldValue, DEC );
-        lcd.setCursor(7,0);
+        lcd.setCursor(8,0);
         lcd.print( " OPV:   " );
         lcd.setCursor(12,0);
         lcd.print( (int)outputVolt.realWorldValue, DEC );
@@ -199,16 +241,17 @@ void updateLcd( void )
         lcd.setCursor(0,1);
         lcd.print( "OPC:   " );
         lcd.setCursor(4,1);
-        lcd.print( (int)outputCurrent.realWorldValue, DEC );
+        lcd.print( outputCurrent.realWorldValue);
         lcd.setCursor(8,1);
         lcd.print( " LOD:   " );
         lcd.setCursor(13,1);
         lcd.print( (int)load, DEC );
         lcd.setCursor(15,1);
         lcd.print( "%" );
-
-    case HIGHVOLTAGE :
-
+        break;
+        
+    case MAXIMUM_VOLT :
+        lcd.clear();
         lcd.print( "IPV:" );
         lcd.print( (int)inputVolt.realWorldValue, DEC );
         lcd.print( " OPV:" );
@@ -217,9 +260,18 @@ void updateLcd( void )
         lcd.setCursor(0,1);
         lcd.print( "HighVolt Detect" );
         break;
+    case MINIMUM_VOLT :
+        lcd.clear();
+        lcd.print( "IPV:" );
+        lcd.print( (int)inputVolt.realWorldValue, DEC );
+        lcd.print( " OPV:" );
+        lcd.print( (int)outputVolt.realWorldValue, DEC );
+
+        lcd.setCursor(0,1);
+        lcd.print( "LOW Volt Detect" );
+        break;
 
     }
-
    
 }
 
@@ -236,7 +288,7 @@ void readVIvalues( void )
       {
     
         //!< OUTPUTVOLTAGE READING
-        adc.voltOutput = analogRead(ADC_OUTPUT_VOLT); 
+        adc.voltOutput =  analogRead(ADC_OUTPUT_VOLT); 
         if( adc.voltOutput > outputVolt.peakMax )
         {
             outputVolt.peakMax = adc.voltOutput;
@@ -247,7 +299,7 @@ void readVIvalues( void )
         }
 
         //!< INPUTVOLTAGE READING
-        adc.voltInput = analogRead(ADC_INPUT_VOLT); 
+        adc.voltInput = analogRead(ADC_INPUT_VOLT);
         if( adc.voltInput > inputVolt.peakMax )
         {
             inputVolt.peakMax = adc.voltInput;
@@ -267,7 +319,7 @@ void readVIvalues( void )
         {
             outputCurrent.lowMin = adc.currentOutput;
         }
-
+        
     }
 }
 
@@ -290,10 +342,16 @@ void calculateVIvalues( void )
     inputVolt.realWorldValue = (inputVolt.realWorldValue/1.390);  
 
     outputCurrent.meanValue = outputCurrent.peakMax - outputCurrent.lowMin;
-    outputCurrent.realWorldValue = findyValue(outputCurrent.meanValue);
+    outputCurrent.meanValue /= 1.390; 
+    outputCurrent.realWorldValue = findyValue((outputCurrent.meanValue*2)); //  THERE IS ADJUSTMENT MADE TO MAKE CORRRECT i VALUE ... NEED TO FIND ROOTCAUSE.
+    
+  /*  if (outputCurrent.realWorldValue > 24 )   // Just to wrong reading or some mistake on logic. NEED TO REMOVE !!!
+    {
+        outputCurrent.realWorldValue  = 0 ;
+    }*/
     power = outputVolt.realWorldValue*outputCurrent.realWorldValue;
 
-    load = (power/TOTAL_POWER)*100;
+    load = (unsigned int )((power/TOTAL_POWER)*100);
 
   }
 
@@ -303,7 +361,7 @@ para 1      : N/A
 return      : N/A
 Discription : Find the linear equvation value( intermit value )
 **********************************************************************************/
-float findyValue( int x3 )
+float findyValue( float x3 )
 {
     uint8_t x1p = 0, x2p = 0;
     uint8_t loop = 0;
@@ -316,10 +374,10 @@ float findyValue( int x3 )
     {
         if( x3 > outCurrentAdcLUT[x1p] )
             x1p = loop;
-        if( x3 < voltage[x2p] )
-            x2p = outCurrentAdcLUT-(loop+1);
+        if( x3 < outCurrentAdcLUT[x2p] )
+            x2p = sizeAdcLUT-(loop+1);
     }
-    if(x1p != 0)
+    if( x1p != 0 )
     {
         x1p--;
     }
@@ -328,8 +386,13 @@ float findyValue( int x3 )
     //outputCurrent.realWorldValue = x1p;
     // load = x2p;
 
-    m = ( outCurrentCalLUT[x2p] - outCurrentCalLUT[x1p] )/ ( outCurrentAdcLUT[x2p] - outCurrentAdcLUT[x1p] );
-    y3 = ((m*(x3-outCurrentAdcLUT[x1p]))+ outCurrentCalLUT[x1p]);
+    m = ( ( outCurrentCalLUT[x2p] - outCurrentCalLUT[x1p] ) / ( outCurrentAdcLUT[x2p] - outCurrentAdcLUT[x1p] ) );
+    y3 = ( ((m*(x3-outCurrentAdcLUT[x1p]))+ outCurrentCalLUT[x1p]) );
+
+    lcd.setCursor(0,0);
+    lcd.print( outCurrentAdcLUT[x1p] );
+    lcd.setCursor(5,0);
+    lcd.print( outCurrentAdcLUT[x2p] );
 
     return( y3 );
 }
@@ -381,4 +444,62 @@ systemError_t checkForThreshold( void )
 
     return( lstatus );
 
+}
+/****************************************************
+*Name :- readDipSwd
+*Para1:-
+*Return:-
+*Details:-
+*****************************************************/
+uint8_t readDipSwd( void )
+{
+    uint8_t returnValue = 0;
+    
+    if( !digitalRead(5) )
+    {
+        returnValue |= (1<<0);
+    }
+    if( !digitalRead(6) )
+    {
+        returnValue |= (1<<1);
+    }
+    if( !digitalRead(7) )
+    {
+        returnValue |= (1<<2);
+    }
+    if( !digitalRead(8) )
+    {
+        returnValue |= (1<<3);
+    }
+    
+    switch( returnValue )
+    {
+        case 0x01 :
+            minVoltageLtd = inVoltRange[0];
+            maxVoltageLtd = inVoltRange[1];
+            break;
+        case 0x02 :
+            minVoltageLtd = inVoltRange[2];
+            maxVoltageLtd = inVoltRange[3];
+            break;
+        case 0x04 :
+            minVoltageLtd = inVoltRange[4];
+            maxVoltageLtd = inVoltRange[5];
+            break;
+        case 0x08 :
+            minVoltageLtd = inVoltRange[6];
+            maxVoltageLtd = inVoltRange[7];
+            break;
+        default :
+        {
+            lcd.clear();
+            lcd.print("  WRONG INPUT  ");
+            lcd.setCursor(0,1);
+            lcd.print("VOLTAGE SELECT");
+            while(1);          
+        }          
+        
+    }
+    return ( returnValue );
+    
 }
