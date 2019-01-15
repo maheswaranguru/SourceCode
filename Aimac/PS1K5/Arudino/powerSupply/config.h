@@ -36,13 +36,14 @@
 
 #ifdef PRODUCD_1K5VA
 #define TOTAL_POWER 1426       // (  voltage * current == 230 * 6.2 )
-#define MAX_POWER (TOTAL_POWER*0.9)
 #endif
 
 #ifdef PRODUCD_3KVA
-#define TOTAL_POWER 2990       // (  voltage * current == 230 * 13 )
-#define MAX_POWER (TOTAL_POWER*0.9)
+#define TOTAL_POWER 800   //2990       // (  voltage * current == 230 * 13 )
 #endif
+
+#define MAX_POWER (90)        //(TOTAL_POWER*0.9)
+#define SHUTDOWN_POWER (95)       //( TOTAL_POWER*0.95 )
 
 #define INPUTVOLT_THRESHOLD  5
 const uint8_t inVoltRange[] = { 220, 245, 220, 255, 200, 245, 190, 245, 180, 245 };

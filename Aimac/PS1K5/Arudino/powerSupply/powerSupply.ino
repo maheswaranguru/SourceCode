@@ -43,9 +43,7 @@ void timerISR( void );
 //*** VARIABLE DECLARATION ***
 adc_t adc;
 data_t outputVolt, inputVolt, outputCurrent, inputCurrent;
-unsigned int load;
-
-unsigned int outi = 0;
+unsigned int load = 0;
 
 float power = 0;
 unsigned char opLowValue = 0;
@@ -59,6 +57,9 @@ uint8_t startUpTimer = 0;
 uint8_t minVoltCnt = 0;
 uint8_t maxVoltCnt =0;
 uint8_t overLoadCnt = 0;
+
+bool buzzerStatus = OFF;
+uint8_t buzzCnt = 0;
 
 uint8_t minVoltageLtd = DEFAULT_MIN_VOLT;
 uint8_t maxVoltageLtd = DEFAULT_MAX_VOLT;
@@ -92,17 +93,14 @@ void setup()
   pinMode(8, INPUT);
   
   pinMode(RELAY, OUTPUT);
-  digitalWrite(RELAY, OFF);
-  
+  digitalWrite(RELAY, OFF);  
   pinMode(BUZZER, OUTPUT);
-  digitalWrite(BUZZER, ON);
-  
+
   Init_LCD();
-  digitalWrite(BUZZER, Off);
   inputSWDStatus = readDipSwd();
 
   sysStat = NOT_READY;
-  delay( START_UP_DELAY );
+  //delay( START_UP_DELAY );
   lcd.clear();
   
  // TimerInit();
@@ -121,22 +119,17 @@ void loop()
       readVIvalues();
       calculateVIvalues();
 
-      //sysErrorStat = checkForThreshold();
+      sysErrorStat = checkForThreshold();
 
       switch( sysStat )
       {
       case NOT_READY :
                       digitalWrite(RELAY, OFF);
-                      sysStat = IDEL;
-                                            
+                      sysStat = IDEL;                                            
                       break;
 
-      case IDEL    :
-                 /* if(STARTUP_CNT <= ++startUpTimer)         //
-                  {
-                    sysStat = NORMAL;
-                  }*/
-                  if( inputVolt.realWorldValue > (maxVoltageLtd + INPUTVOLT_THRESHOLD) )
+      case IDEL    :                // THIS IS EXTRA ONE CYCLE I WAIT BEFORE TURN ON RELAY. 
+                  /*if( inputVolt.realWorldValue > (maxVoltageLtd + INPUTVOLT_THRESHOLD) )
                   {
                       sysStat = MAXIMUM_VOLT;
                   }else if( inputVolt.realWorldValue < (minVoltageLtd - INPUTVOLT_THRESHOLD) )
@@ -145,42 +138,49 @@ void loop()
                   }else
                   {
                       sysStat = NORMAL;
-                  }
-                  
-                  //sysStat = NORMAL;
-                  
+                  }*/
+
                   break;
 
       case NORMAL :
-                 /* if( NO_ERROR == sysErrorStat )
-                  {
-                      digitalWrite(RELAY, ON);
-                  }else if(  ( HIGHVOLTAGE == sysErrorStat ) || ( LOWVOLTAGE == sysErrorStat ) || ( OVERLOAD == sysErrorStat ) )
-                  {
-                      digitalWrite(RELAY, OFF);
-                  }*/
                   digitalWrite(RELAY, ON);
+                  digitalWrite(BUZZER, OFF);
                   
                   break;
 
       case MINIMUM_VOLT :
-                  minVoltCnt++;
+                  //minVoltCnt++;
+                  digitalWrite(RELAY, OFF);
                   break;
 
       case MAXIMUM_VOLT :
-                      maxVoltCnt++;
+                  //maxVoltCnt++;
+                  digitalWrite(RELAY, OFF);
                   break;
 
       case OVER_LOAD :
-                      overLoadCnt++;
-                      break;
+                 overLoadCnt++;
+                 if( SHUTDOWN_POWER < load )
+                  {
+                      //digitalWrite(RELAY, OFF);
+                      updateLcd();
+                      //while(1);
+                  }
+                  if( buzzCnt++ > 1)
+                  {
+                    buzzerStatus = !buzzerStatus;
+                    digitalWrite(BUZZER, buzzerStatus);
+                    buzzCnt = 0;
+                  }
+
+                 // digitalWrite(BUZZER, ON);
+                  break;
 
       case NO_LOAD:
       default :
-          digitalWrite(RELAY, OFF);
+         // digitalWrite(RELAY, OFF);
           break;
       }
-
 
     updateLcd();
     resetValues();
@@ -200,13 +200,22 @@ void Init_LCD( void )
     lcd.print("--- WELCOME ---");
     lcd.setCursor(0,1);
     lcd.print("**** AiMac **** ");
-    delay(2000);
+    digitalWrite(BUZZER, ON);
+    delay(500);
+    digitalWrite(BUZZER, OFF);    
+    delay(1000);
 
     lcd.clear();
     lcd.print("Initializing...");
     lcd.setCursor(0,1);
+#ifdef PRODUCD_1K5VA
     lcd.print("*** SAFE 1K5 ***");
-    delay(2000);
+#endif
+#ifdef PRODUCD_3KVA
+    lcd.print("*** SAFE 3K0 ***");
+#endif
+
+    delay(1000);
 
 }
 /****************************************************
@@ -224,6 +233,7 @@ void updateLcd( void )
         minVoltCnt = 0;
         maxVoltCnt =0;
         overLoadCnt = 0;
+        digitalWrite( BUZZER, OFF );
     }
     
     switch( sysStat )
@@ -235,7 +245,7 @@ void updateLcd( void )
         lcd.print( (int)inputVolt.realWorldValue, DEC );
         lcd.setCursor(8,0);
         lcd.print( " OPV:   " );
-        lcd.setCursor(12,0);
+        lcd.setCursor(13,0);
         lcd.print( (int)outputVolt.realWorldValue, DEC );
 
         lcd.setCursor(0,1);
@@ -270,9 +280,24 @@ void updateLcd( void )
         lcd.setCursor(0,1);
         lcd.print( "LOW Volt Detect" );
         break;
-
-    }
-   
+        
+    case OVER_LOAD :
+        lcd.clear();
+        lcd.print( "OPC:   " );
+        lcd.setCursor(4,0);
+        lcd.print( outputCurrent.realWorldValue);
+        lcd.setCursor(8,0);
+        lcd.print( " LOD:   " );
+        lcd.setCursor(13,0);
+        lcd.print( (int)load, DEC );
+        lcd.setCursor(15,0);
+        lcd.print( "%" );
+        
+        lcd.setCursor(0,1);
+        lcd.print( "OVER LOAD Detect" );
+        
+        break;
+    }   
 }
 
 /****************************************************
@@ -345,12 +370,7 @@ void calculateVIvalues( void )
     outputCurrent.meanValue /= 1.390; 
     outputCurrent.realWorldValue = findyValue((outputCurrent.meanValue*2)); //  THERE IS ADJUSTMENT MADE TO MAKE CORRRECT i VALUE ... NEED TO FIND ROOTCAUSE.
     
-  /*  if (outputCurrent.realWorldValue > 24 )   // Just to wrong reading or some mistake on logic. NEED TO REMOVE !!!
-    {
-        outputCurrent.realWorldValue  = 0 ;
-    }*/
     power = outputVolt.realWorldValue*outputCurrent.realWorldValue;
-
     load = (unsigned int )((power/TOTAL_POWER)*100);
 
   }
@@ -427,20 +447,63 @@ systemError_t checkForThreshold( void )
     systemError_t lstatus = NO_ERROR;
     int power  = 0;
 
-    if( MIN_REQ_VOLT >= inputVolt.realWorldValue )
+    if(  MAXIMUM_VOLT != sysStat )
     {
-        lstatus |= LOWVOLTAGE;
-    }
-
-    if( MAX_REQ_VOLT< inputVolt.realWorldValue )
+     if( inputVolt.realWorldValue > maxVoltageLtd  )
+      {
+          sysStat = MAXIMUM_VOLT;
+          lstatus = HIGHVOLTAGE;          
+      }
+    }else
     {
-        lstatus |= HIGHVOLTAGE;
+     if( inputVolt.realWorldValue < ( maxVoltageLtd - INPUTVOLT_THRESHOLD ) )
+      {
+          sysStat = NORMAL;
+          lstatus = NO_ERROR;          
+      }else
+      {
+            sysStat = MAXIMUM_VOLT;
+            lstatus = HIGHVOLTAGE;          
+      }
     }
-
-    if ( load >= MAX_POWER )
+    
+    if ( MINIMUM_VOLT != sysStat )
     {
-        lstatus |= OVERLOAD;
-    }
+       if( inputVolt.realWorldValue < minVoltageLtd )
+       {
+          sysStat = MINIMUM_VOLT;
+          lstatus = LOWVOLTAGE;
+       }
+    }else
+    {
+        if( inputVolt.realWorldValue > ( minVoltageLtd+ INPUTVOLT_THRESHOLD ) )
+        {
+          sysStat = NORMAL;
+          lstatus = NO_ERROR;       
+        }else
+        {
+          sysStat = MINIMUM_VOLT;
+          lstatus = LOWVOLTAGE;            
+        }        
+    }    
+      if( load > MAX_POWER) 
+      {
+           if( overLoadCnt++ > 3 )
+           {
+               sysStat = OVER_LOAD;
+               lstatus = OVERLOAD;
+               overLoadCnt = 0;
+           }
+           if( OVER_LOAD == sysStat )
+           {
+               lstatus = OVERLOAD;
+           }           
+      }
+      
+      if( lstatus == NO_ERROR )
+      {
+          sysStat = NORMAL;
+      }
 
     return( lstatus );
 
@@ -474,21 +537,25 @@ uint8_t readDipSwd( void )
     
     switch( returnValue )
     {
-        case 0x01 :
+        case 0x00 :
             minVoltageLtd = inVoltRange[0];
             maxVoltageLtd = inVoltRange[1];
             break;
-        case 0x02 :
+        case 0x01 :
             minVoltageLtd = inVoltRange[2];
             maxVoltageLtd = inVoltRange[3];
             break;
-        case 0x04 :
+        case 0x02 :
             minVoltageLtd = inVoltRange[4];
             maxVoltageLtd = inVoltRange[5];
             break;
-        case 0x08 :
+        case 0x04 :
             minVoltageLtd = inVoltRange[6];
             maxVoltageLtd = inVoltRange[7];
+            break;
+        case 0x08 :
+            minVoltageLtd = inVoltRange[8];
+            maxVoltageLtd = inVoltRange[9];
             break;
         default :
         {
