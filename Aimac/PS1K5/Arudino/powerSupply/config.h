@@ -1,8 +1,8 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define PRODUCD_3KVA (0)
-//#define 1K5VA  (1)
+#define PRODUCT_3KVA (0)
+//#define PRODUCT_1K5VA  (1)
 
 #ifndef ON
 #define ON 1
@@ -10,6 +10,18 @@
 
 #ifndef OFF
 #define OFF 0
+#endif
+
+#ifndef CLEAR
+#define CLEAR (0)
+#endif
+
+#ifndef SET
+#define SET (1)
+#endif
+
+#ifndef SET_WORD
+#define SET_WORD (0xFFFF)
 #endif
 
 #define DEFAULT_MIN_VOLT	200
@@ -34,16 +46,18 @@
 #define STABLE_CNT  5
 #define STARTUP_CNT  320
 
-#ifdef PRODUCD_1K5VA
+#ifdef PRODUCT_1K5VA
 #define TOTAL_POWER 1426       // (  voltage * current == 230 * 6.2 )
 #endif
 
-#ifdef PRODUCD_3KVA
-#define TOTAL_POWER 800   //2990       // (  voltage * current == 230 * 13 )
+#ifdef PRODUCT_3KVA
+#define TOTAL_POWER 2990       // (  voltage * current == 230 * 13 )
 #endif
 
 #define MAX_POWER (90)        //(TOTAL_POWER*0.9)
 #define SHUTDOWN_POWER (95)       //( TOTAL_POWER*0.95 )
+
+#define LOAD_STABLE_CNT 3
 
 #define INPUTVOLT_THRESHOLD  5
 const uint8_t inVoltRange[] = { 220, 245, 220, 255, 200, 245, 190, 245, 180, 245 };

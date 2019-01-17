@@ -128,24 +128,13 @@ void loop()
                       sysStat = IDEL;                                            
                       break;
 
-      case IDEL    :                // THIS IS EXTRA ONE CYCLE I WAIT BEFORE TURN ON RELAY. 
-                  /*if( inputVolt.realWorldValue > (maxVoltageLtd + INPUTVOLT_THRESHOLD) )
-                  {
-                      sysStat = MAXIMUM_VOLT;
-                  }else if( inputVolt.realWorldValue < (minVoltageLtd - INPUTVOLT_THRESHOLD) )
-                  {
-                      sysStat = MINIMUM_VOLT;
-                  }else
-                  {
-                      sysStat = NORMAL;
-                  }*/
-
-                  break;
+      case IDEL    : 
+                    sysStat = NORMAL; 
+                    break;
 
       case NORMAL :
                   digitalWrite(RELAY, ON);
-                  digitalWrite(BUZZER, OFF);
-                  
+                  digitalWrite(BUZZER, OFF);                  
                   break;
 
       case MINIMUM_VOLT :
@@ -162,9 +151,9 @@ void loop()
                  overLoadCnt++;
                  if( SHUTDOWN_POWER < load )
                   {
-                      //digitalWrite(RELAY, OFF);
+                      digitalWrite(RELAY, OFF);
                       updateLcd();
-                      //while(1);
+                      while(1);
                   }
                   if( buzzCnt++ > 1)
                   {
@@ -172,13 +161,11 @@ void loop()
                     digitalWrite(BUZZER, buzzerStatus);
                     buzzCnt = 0;
                   }
-
-                 // digitalWrite(BUZZER, ON);
                   break;
 
       case NO_LOAD:
       default :
-         // digitalWrite(RELAY, OFF);
+                digitalWrite(RELAY, OFF);
           break;
       }
 
@@ -403,9 +390,6 @@ float findyValue( float x3 )
     }
     x2p++;
 
-    //outputCurrent.realWorldValue = x1p;
-    // load = x2p;
-
     m = ( ( outCurrentCalLUT[x2p] - outCurrentCalLUT[x1p] ) / ( outCurrentAdcLUT[x2p] - outCurrentAdcLUT[x1p] ) );
     y3 = ( ((m*(x3-outCurrentAdcLUT[x1p]))+ outCurrentCalLUT[x1p]) );
 
@@ -419,33 +403,32 @@ float findyValue( float x3 )
 
 /****************************************************
 *Name :- resetValues
-*Para1:-
-*Return:-
-*Details:-
+*Para1:- N/A
+*Return:-N/A
+*Details:-  reset all parameters for new reading.
 *****************************************************/
 void resetValues( void )
 {
-    outputVolt.peakMax = 0;
-    outputVolt.lowMin = 0x3FF;
-    inputVolt.peakMax = 0;
-    inputVolt.lowMin = 0x3FF;
-    outputCurrent.peakMax = 0;
-    outputCurrent.lowMin = 0x3FF;
-    inputCurrent.peakMax = 0;
-    inputCurrent.lowMin = 0x3FF;
-    load = 0;
+    outputVolt.peakMax = CLEAR;
+    outputVolt.lowMin = SET_WORD;
+    inputVolt.peakMax = CLEAR;
+    inputVolt.lowMin = SET_WORD;
+    outputCurrent.peakMax = CLEAR;
+    outputCurrent.lowMin = SET_WORD;
+    inputCurrent.peakMax = CLEAR;
+    inputCurrent.lowMin = SET_WORD;
+    load = CLEAR;
 }
 
 /****************************************************
 *Name :- checkForThreshold
-*Para1:-
-*Return:-
-*Details:-
+*Para1:-  N/A
+*Return:- Error Code
+*Details:-  Check for any error.
 *****************************************************/
 systemError_t checkForThreshold( void )
 {
     systemError_t lstatus = NO_ERROR;
-    int power  = 0;
 
     if(  MAXIMUM_VOLT != sysStat )
     {
@@ -488,11 +471,11 @@ systemError_t checkForThreshold( void )
     }    
       if( load > MAX_POWER) 
       {
-           if( overLoadCnt++ > 3 )
+           if( overLoadCnt++ > LOAD_STABLE_CNT )      // Wait for stable no of times to conclude 
            {
                sysStat = OVER_LOAD;
                lstatus = OVERLOAD;
-               overLoadCnt = 0;
+               overLoadCnt = CLEAR;
            }
            if( OVER_LOAD == sysStat )
            {
@@ -510,9 +493,9 @@ systemError_t checkForThreshold( void )
 }
 /****************************************************
 *Name :- readDipSwd
-*Para1:-
-*Return:-
-*Details:-
+*Para1:-  N/A
+*Return:- DIP switch Values
+*Details:- Read DIP switch and asign input voltafe throshold 
 *****************************************************/
 uint8_t readDipSwd( void )
 {
