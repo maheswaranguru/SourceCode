@@ -1,8 +1,8 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define PRODUCT_3KVA (0)
-//#define PRODUCT_1K5VA  (1)
+//#define PRODUCT_3KVA (0)
+#define PRODUCT_1K5VA  (1)
 
 #ifndef ON
 #define ON 1
