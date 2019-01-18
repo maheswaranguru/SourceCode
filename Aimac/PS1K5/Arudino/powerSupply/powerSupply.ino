@@ -12,7 +12,6 @@
 #include "config.h"
 #include "timer.h"
 
-#define RELAY 9
 #define BUZZER 10
 #define START_UP_DELAY 3000
 
@@ -72,7 +71,7 @@ const unsigned int ADC_INPUT_CURRENT = A4;
 unsigned int looptime = 0;
 
 // initialize the LCD library with the numbers of the interface pins
-LiquidCrystal_I2C lcd(0x3F,16,2); // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(LCD_ADDRESS,16,2); // set the LCD address LCD_ADDRESS(MAY BE DIFFERENT ) for a 16 chars and 2 line display
 
 /****************************************************
 *Name : setup
@@ -82,8 +81,6 @@ LiquidCrystal_I2C lcd(0x3F,16,2); // set the LCD address to 0x27 for a 16 chars 
 *****************************************************/
 void setup() 
 {
-  uint8_t  inputSWDStatus = 0;
-  
  /* lcd.init(); //initialize the lcd
   lcd.backlight(); //open the backlight
   Serial.begin(9600);*/
@@ -97,7 +94,7 @@ void setup()
   pinMode(BUZZER, OUTPUT);
 
   Init_LCD();
-  inputSWDStatus = readDipSwd();
+  ( void ) readDipSwd();
 
   sysStat = NOT_READY;
   //delay( START_UP_DELAY );
@@ -124,46 +121,47 @@ void loop()
       switch( sysStat )
       {
       case NOT_READY :
-                      digitalWrite(RELAY, OFF);
-                      sysStat = IDEL;                                            
-                      break;
+                    digitalWrite(RELAY, OFF);
+                    sysStat = IDEL;                                            
+                    break;
 
       case IDEL    : 
                     sysStat = NORMAL; 
                     break;
 
       case NORMAL :
-                  digitalWrite(RELAY, ON);
-                  digitalWrite(BUZZER, OFF);                  
-                  break;
+                    digitalWrite(RELAY, ON);
+                    digitalWrite(BUZZER, OFF);                  
+                    break;
 
       case MINIMUM_VOLT :
-                  //minVoltCnt++;
-                  digitalWrite(RELAY, OFF);
-                  break;
+                    //minVoltCnt++;
+                    digitalWrite(RELAY, OFF);
+                    break;
 
       case MAXIMUM_VOLT :
-                  //maxVoltCnt++;
-                  digitalWrite(RELAY, OFF);
-                  break;
+                    //maxVoltCnt++;
+                    digitalWrite(RELAY, OFF);
+                    break;
 
       case OVER_LOAD :
                  overLoadCnt++;
-                 if( SHUTDOWN_POWER < load )
-                  {
+                    if( SHUTDOWN_POWER < load )
+                    {
                       digitalWrite(RELAY, OFF);
                       updateLcd();
                       while(1);
-                  }
-                  if( buzzCnt++ > 1)
-                  {
-                    buzzerStatus = !buzzerStatus;
-                    digitalWrite(BUZZER, buzzerStatus);
-                    buzzCnt = 0;
-                  }
+                    }
+                    
+                    if( buzzCnt++ > 1)
+                    {
+                        buzzerStatus = !buzzerStatus;
+                        digitalWrite(BUZZER, buzzerStatus);
+                        buzzCnt = 0;
+                    }
                   break;
 
-      case NO_LOAD:
+      case NO_LOAD:      
       default :
                 digitalWrite(RELAY, OFF);
           break;
@@ -175,9 +173,9 @@ void loop()
 
 /****************************************************
 *Name : Init_LCD
-*Para1:
-*Return:
-*Details:
+*Para1: N/A
+*Return: N/A
+*Details: initialize the lcd and WELCOME SCREEN display
 *****************************************************/
 void Init_LCD( void )
 {
@@ -207,9 +205,9 @@ void Init_LCD( void )
 }
 /****************************************************
 *Name : updateLcd
-*Para1:
-*Return:
-*Details:
+*Para1:N/A
+*Return:N/A
+*Details: Update display for current state.
 *****************************************************/
 void updateLcd( void )
 {
@@ -284,14 +282,18 @@ void updateLcd( void )
         lcd.print( "OVER LOAD Detect" );
         
         break;
+    case NOT_READY :
+    default:
+    break;
     }   
+    
 }
 
 /****************************************************
 *Name : readVIvalues
-*Para1:
-*Return:
-*Details:
+*Para1:N/A
+*Return:N/A
+*Details: Read adc for no times . this should control by TIMER.
 *****************************************************/
 void readVIvalues( void )
 {

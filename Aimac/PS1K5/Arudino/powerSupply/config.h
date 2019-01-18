@@ -1,7 +1,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-//#define PRODUCT_3KVA (0)
+//#define PRODUCT_3KVA (0)      // CHOOSE WHICH VARIENT NEED TO BUILD !!!
 #define PRODUCT_1K5VA  (1)
 
 #ifndef ON
@@ -28,8 +28,10 @@
 #define DEFAULT_MAX_VOLT 	250
 #define ADC_READ_SAMPLES	1000
 
-#define RELAY 6
+#define RELAY 9
 #define NANO_LED PB5
+
+#define LCD_ADDRESS  0x3F
 
 #define ADC_VOLT  A4
 #define ADC_CURRENT A6
@@ -38,7 +40,7 @@
 #define MIN_THRESHOLD_VOLT 205
 
 #define MAX_REQ_VOLT 250
-#define MIN_THRESHOLD_VOLT 245
+#define MAX_THRESHOLD_VOLT 245
 
 #define MIN_LOAD  500
 #define MAX_LOAD  1500
@@ -55,7 +57,7 @@
 #endif
 
 #define MAX_POWER (90)        //(TOTAL_POWER*0.9)
-#define SHUTDOWN_POWER (95)       //( TOTAL_POWER*0.95 )
+#define SHUTDOWN_POWER (95)  //( TOTAL_POWER*0.95 )
 
 #define LOAD_STABLE_CNT 3
 
