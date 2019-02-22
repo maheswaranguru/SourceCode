@@ -62,7 +62,11 @@
 #define LOAD_STABLE_CNT 3
 
 #define INPUTVOLT_THRESHOLD  5
-const uint8_t inVoltRange[] = { 220, 245, 220, 255, 200, 245, 190, 245, 180, 245 };
+const uint8_t inVoltRange[] = { 220, 245,
+                                220, 255, 
+                                200, 245, 
+                                190, 245, 
+                                180, 245 };
 
 
 
