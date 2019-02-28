@@ -1,0 +1,4 @@
+22-Feb
+1. New SW - Copied 
+2. CT Calibration Data updated in line no# 24 & 24 
+3. Input voltage range for DIP Switch changed from 220 to 210
