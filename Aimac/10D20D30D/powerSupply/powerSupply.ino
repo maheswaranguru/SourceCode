@@ -18,9 +18,7 @@ void calculateVIvalues( void );
 void resetValues( void );
 systemError_t checkForThreshold( void );
 float findyValue( float x3 );
-
-void Init_LCD( void );
-void timerISR( void );
+void updateRelay( bool status1, bool status2 );
 
 //*** VARIABLE DECLARATION ***
 adc_t adc;
@@ -43,10 +41,8 @@ uint8_t buzzCnt = 0;
 uint8_t minVoltageLtd = DEFAULT_MIN_VOLT;
 uint8_t maxVoltageLtd = DEFAULT_MAX_VOLT;
 
-const unsigned int ADC_OUTPUT_VOLT = A1;
 const unsigned int ADC_INPUT_VOLT  = A0;
 const unsigned int ADC_OUTPUT_CURRENT  = A3;
-const unsigned int ADC_INPUT_CURRENT = A4;
 
 unsigned int looptime = 0;
 
@@ -138,7 +134,6 @@ void loop()
                         buzzCnt = 0;
                     }
                   break;
-
       case NO_LOAD:      
       default :
                 digitalWrite(RELAY1, OFF);
@@ -359,4 +354,22 @@ systemError_t checkForThreshold( void )
           sysStat = NORMAL;
       }
     return( lstatus );
+}
+/****************************************************
+*Name :- updateRelay
+*Para1:-  first relay status.
+*Para2:-  second relay status.
+*Return:- N/A
+*Details:-  Update Relay status.
+*****************************************************/
+void updateRelay( bool status1, bool status2 )
+{
+    digitalWrite(RELAY1, status1);
+ 
+#if PRODUCT_VARIANT != 20 
+    digitalWrite(RELAY2, status2);
+#else 
+(void) status2;
+#endif
+
 }
